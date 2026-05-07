@@ -75,15 +75,15 @@ List<Map<String, dynamic>> _mergeAllParameters({
   required String mountedPath,
   required SwaggerInfo? swaggerInfo,
 }) {
-  /// Path params detectados automáticamente desde /users/<id>
+  /// Path parameters automatically detected from /users/<id>
   final pathParameters = _extractPathParameters(mountedPath);
 
-  /// Params definidos manualmente en el controller
+  /// Manually defined parameters in the controller
   final documentedParameters = _buildParametersFromDocs(
     swaggerInfo?.parameters ?? const [],
   );
 
-  /// Evitar duplicados
+  /// Avoid duplicates
   final merged = [
     ...pathParameters,
     ...documentedParameters.where(
@@ -389,19 +389,19 @@ void _proxyController(
   if (openApiResponses.isEmpty) {
     openApiResponses['200'] = {'description': 'Successful proxy operation'};
     openApiResponses['502'] = {
-      'description': 'Bad Gateway - Error al procesar la solicitud proxy',
+      'description': 'Bad Gateway - Error processing proxy request',
     };
   }
 
   final requestBody =
       mergedSwaggerInfo?.requestBodySchema ??
       {
-        'description': 'Request body (formato flexible para proxy)',
+        'description': 'Request body (flexible format for proxy)',
         'content': {
           'application/json': {
             'schema': {
               'type': 'object',
-              'description': 'Contenido dinámico del proxy',
+              'description': 'Dynamic proxy content',
             },
           },
           'application/x-www-form-urlencoded': {
@@ -590,17 +590,17 @@ Map<String, dynamic> _generateOpenApiSpec(ApiRouter apiRouter) {
           'scheme': 'bearer',
           'bearerFormat': 'JWT',
           'description':
-              'Introduce el token JWT con el prefijo "Bearer ". Ejemplo: "Bearer {token}"',
+              'Enter the JWT token with the "Bearer " prefix. Example: "Bearer {token}"',
         },
       },
       'schemas': <String, dynamic>{
         'Error': {
           'type': 'object',
           'properties': {
-            'code': {'type': 'integer', 'description': 'Código de error.'},
+            'code': {'type': 'integer', 'description': 'Error code.'},
             'message': {
               'type': 'string',
-              'description': 'Descripción del error.',
+              'description': 'Error description.',
             },
           },
         },

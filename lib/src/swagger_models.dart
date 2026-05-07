@@ -28,10 +28,10 @@ class ResponseDoc {
 class SchemaDoc {
   const SchemaDoc(this.name, this.schema);
 
-  /// El nombre del esquema
+  /// The name of the schema.
   final String name;
 
-  /// La definición del esquema en formato de mapa JSON.
+  /// The schema definition in JSON map format.
   final Map<String, dynamic> schema;
 }
 

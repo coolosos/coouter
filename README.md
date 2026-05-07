@@ -4,33 +4,33 @@
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](https://github.com/coolosos/coouter/blob/main/LICENSE)
 [![Platform](https://img.shields.io/badge/platform-dart%20%7C%20server-orange?style=flat-square)](https://dart.dev)
 
-**Coouter** es una capa de abstracción de alto nivel para [Shelf](https://pub.dev/packages/shelf) diseñada para desarrolladores que exigen **seguridad de tipos**, **arquitectura declarativa** y **documentación automática**.
+**Coouter** is a high-level abstraction layer for [Shelf](https://pub.dev/packages/shelf) designed for developers who demand **type safety**, **declarative architecture**, and **automatic documentation**.
 
-Elimina el boilerplate de la validación de JSON, el manejo manual de errores y la sincronización de Swagger. Con Coouter, tu código *es* tu documentación.
-
----
-
-## ✨ Características Principales
-
-- 🛡️ **Seguridad de Tipos Total**: Integración nativa con `fpdart` utilizando el patrón `Either<Failure, Success>`.
-- 🧱 **Arquitectura Declarativa**: Organiza tu lógica en Controladores, Handlers y Grupos reutilizables.
-- 📝 **Swagger/OpenAPI 3.0**: Generación automática de especificaciones y servidor de Swagger UI incluido.
-- 🔄 **Mapeo Inteligente**: Conversión automática de Body y Query Params a modelos Dart con validación integrada.
-- 🧩 **Composición de Middleware**: Aplica lógica transversal a nivel de grupo, controlador o ruta individual.
-- 🚀 **Shelf-Ready**: Totalmente compatible con todo el ecosistema de middleware de Shelf.
+Eliminate JSON validation boilerplate, manual error handling, and Swagger synchronization. With Coouter, your code *is* your documentation.
 
 ---
 
-## 📦 Instalación
+## ✨ Key Features
 
-Añade `coouter` a tu `pubspec.yaml`:
+- 🛡️ **Total Type Safety**: Native integration with `fpdart` using the `Either<Failure, Success>` pattern.
+- 🧱 **Declarative Architecture**: Organize your logic into reusable Controllers, Handlers, and Routers.
+- 📝 **Swagger/OpenAPI 3.0**: Automatic specification generation and included Swagger UI server.
+- 🔄 **Smart Mapping**: Automatic conversion of Body and Query Params to Dart models with integrated validation.
+- 🧩 **Middleware Composition**: Apply cross-cutting logic at the router, controller, or individual route level.
+- 🚀 **Shelf-Ready**: Fully compatible with the entire Shelf middleware ecosystem.
+
+---
+
+## 📦 Installation
+
+Add `coouter` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
   coouter: ^1.0.0
 ```
 
-O ejecútalo en tu terminal:
+Or run it in your terminal:
 
 ```bash
 dart pub add coouter
@@ -38,12 +38,12 @@ dart pub add coouter
 
 ---
 
-## 🏛️ Los Tres Pilares
+## 🏛️ The Three Pillars
 
-Coouter se basa en tres estructuras fundamentales para organizar tu API:
+Coouter is built on three fundamental structures to organize your API:
 
-### 1. Handlers (Estilo Funcional)
-Ideal para prototipos rápidos o endpoints sencillos.
+### 1. Handlers (Functional Style)
+Ideal for rapid prototyping or simple endpoints.
 
 ```dart
 final healthCheck = ApiControllerHandler<MyError, JsonResponse>(
@@ -53,8 +53,8 @@ final healthCheck = ApiControllerHandler<MyError, JsonResponse>(
 );
 ```
 
-### 2. Controladores (Estilo Basado en Clases)
-Perfecto para lógica compleja y reutilización. Permite inyectar dependencias y manejar estados.
+### 2. Controllers (Class-Based Style)
+Perfect for complex logic and reusability. Allows for dependency injection and state management.
 
 ```dart
 class GetUserController extends ApiConverterController<UserParams, AppError, JsonResponse> {
@@ -68,13 +68,13 @@ class GetUserController extends ApiConverterController<UserParams, AppError, Jso
     final user = await repository.findById(ctx.params.id);
     return user != null 
       ? Right(JsonResponse(user.toMap()))
-      : Left(AppError.notFound('Usuario no encontrado'));
+      : Left(AppError.notFound('User not found'));
   };
 }
 ```
 
-### 3. Grupos (Composición)
-Agrupa controladores bajo prefijos y middlewares comunes.
+### 3. Routers (Composition)
+Group controllers under common prefixes and middlewares.
 
 ```dart
 class ApiV1 extends ApiRouter {
@@ -91,9 +91,9 @@ class ApiV1 extends ApiRouter {
 
 ---
 
-## 🛡️ Manejo de Errores Tipado
+## 🛡️ Typed Error Handling
 
-Olvídate de los `try-catch` infinitos. Coouter utiliza `Either` para forzarte a manejar los errores de forma explícita. Define tus fallos extendiendo `ResponseFailure`:
+Forget about infinite `try-catch` blocks. Coouter uses `Either` to force you to handle errors explicitly. Define your failures by extending `ResponseFailure`:
 
 ```dart
 class AppError extends ResponseFailure {
@@ -107,60 +107,60 @@ class AppError extends ResponseFailure {
 
 ---
 
-## 📝 Documentación Viva (Swagger)
+## 📝 Live Documentation (Swagger)
 
-Añade el mixin `SwaggerInfo` a tus controladores para generar automáticamente la especificación OpenAPI:
+Add the `SwaggerInfo` mixin to your controllers to automatically generate the OpenAPI specification:
 
 ```dart
 class CreateUserController extends ApiConverterWithBodyController<UserBody, NoParams, AppError, JsonResponse> 
     with SwaggerInfo {
   
   @override
-  String get description => 'Crea un nuevo usuario en el sistema';
+  String get description => 'Creates a new user in the system';
 
   @override
   Map<int, ResponseDoc> get responses => {
-    201: ResponseDoc('Usuario creado exitosamente', schema: SchemaDoc.name('User')),
-    400: ResponseDoc('Datos inválidos'),
+    201: ResponseDoc('User created successfully', schema: SchemaDoc.name('User')),
+    400: ResponseDoc('Invalid data'),
   };
 }
 ```
 
-Para servir la documentación, simplemente añade el `SwaggerController`:
+To serve the documentation, simply add the `SwaggerController`:
 
 ```dart
 final router = Router()
   ..mount('/api/v1', apiV1.handler)
   ..mount('/docs', SwaggerController(apiRouter: apiV1).handler);
 ```
-Accede a `http://localhost:8080/docs/` y verás tu Swagger UI listo para usar.
+Access `http://localhost:8080/docs/` and you'll see your Swagger UI ready to use.
 
 ---
 
-## 🚀 Ejemplo Completo en 30 Segundos
+## 🚀 Full Example in 30 Seconds
 
 ```dart
 import 'package:coouter/coouter.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 
 void main() async {
-  final api = ApiV1(); // Tu grupo de rutas
+  final api = ApiV1(); // Your route group
   
   final handler = const Pipeline()
     .addMiddleware(logRequests())
     .addHandler(api.handler);
 
   await shelf_io.serve(handler, '0.0.0.0', 8080);
-  print('🚀 Servidor volando en http://localhost:8080');
+  print('🚀 Server flying at http://localhost:8080');
 }
 ```
 
 ---
 
-## 🤝 Contribuciones
+## 🤝 Contributions
 
-¡Las contribuciones son bienvenidas! Si tienes una idea para una nueva característica o has encontrado un bug, por favor abre un Issue o un Pull Request.
+Contributions are welcome! If you have an idea for a new feature or have found a bug, please open an Issue or a Pull Request.
 
-## 📄 Licencia
+## 📄 License
 
-Este proyecto está bajo la Licencia MIT - mira el archivo [LICENSE](LICENSE) para más detalles.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
