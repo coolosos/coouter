@@ -4,7 +4,7 @@ import 'dart:io';
 
 import 'package:shelf/shelf.dart';
 
-import '../api/api_group.dart';
+import '../api/api_router.dart';
 import '../controllers/api_controller_handler.dart';
 import '../controllers/base_controller.dart';
 import '../controllers/api_converter_with_body_controller.dart';
@@ -570,7 +570,7 @@ void _apiControllers(
   }
 }
 
-Map<String, dynamic> _generateOpenApiSpec(ApiGroup apiRouter) {
+Map<String, dynamic> _generateOpenApiSpec(ApiRouter apiRouter) {
   final openApiSpec = {
     'openapi': '3.0.0',
     'info': {
@@ -638,7 +638,7 @@ Map<String, dynamic> _generateOpenApiSpec(ApiGroup apiRouter) {
 
 final class SwaggerController extends ApiControllers {
   SwaggerController({required this.apiRouter});
-  final ApiGroup apiRouter;
+  final ApiRouter apiRouter;
 
   @override
   List<BaseController> get routes => [

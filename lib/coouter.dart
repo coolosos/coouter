@@ -1,5 +1,5 @@
 // Controllers
-export 'src/api/api_group.dart';
+export 'src/api/api_router.dart';
 export 'src/api/api_mountable.dart';
 export 'src/controllers/api_controller_handler.dart';
 export 'src/controllers/api_converter_controller.dart';

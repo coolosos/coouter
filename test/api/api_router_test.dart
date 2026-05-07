@@ -16,7 +16,7 @@ final class _TestFailure extends ResponseFailure {
   List<Object?> get props => [message, statusCode, headers];
 }
 
-/// When mounted via ApiGroup, the controller path must be '/' since
+/// When mounted via ApiRouter, the controller path must be '/' since
 /// shelf_router.mount strips the prefix and the inner router sees '/'.
 ApiControllerHandler<_TestFailure, _OkEntity> _handler() {
   return ApiControllerHandler<_TestFailure, _OkEntity>(
@@ -27,7 +27,7 @@ ApiControllerHandler<_TestFailure, _OkEntity> _handler() {
   );
 }
 
-final class _TestGroup extends ApiGroup {
+final class _TestGroup extends ApiRouter {
   @override
   Map<String, ApiMountable> get controllers => {
     '/health': ApiMountable.single(_handler()),
@@ -35,7 +35,7 @@ final class _TestGroup extends ApiGroup {
   };
 }
 
-final class _EmptyGroup extends ApiGroup {
+final class _EmptyGroup extends ApiRouter {
   @override
   Map<String, ApiMountable> get controllers => {};
 }
@@ -50,7 +50,7 @@ final class _TestMiddleware extends BaseMiddleware {
   }
 }
 
-final class _GroupWithMiddleware extends ApiGroup {
+final class _GroupWithMiddleware extends ApiRouter {
   @override
   Map<String, ApiMountable> get controllers => {
     '/test': ApiMountable.single(_handler()),
@@ -61,7 +61,7 @@ final class _GroupWithMiddleware extends ApiGroup {
 }
 
 void main() {
-  group('ApiGroup', () {
+  group('ApiRouter', () {
     test('single mount routes correctly', () async {
       final group = _TestGroup();
       final request = Request('GET', Uri.parse('http://localhost/health'));

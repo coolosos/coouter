@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:coouter/coouter.dart';
 import 'package:coolson/coolson.dart';
-import 'package:json_schema/json_schema.dart';
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
 

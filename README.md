@@ -1,294 +1,166 @@
-# Coouter
+# 🛸 Coouter
 
-Declarative routing for [Shelf](https://pub.dev/packages/shelf). Write type-safe API endpoints with automatic JSON conversion and OpenAPI documentation.
+[![Pub Version](https://img.shields.io/pub/v/coouter?style=flat-square&color=blue)](https://pub.dev/packages/coouter)
+[![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](https://github.com/coolosos/coouter/blob/main/LICENSE)
+[![Platform](https://img.shields.io/badge/platform-dart%20%7C%20server-orange?style=flat-square)](https://dart.dev)
+
+**Coouter** es una capa de abstracción de alto nivel para [Shelf](https://pub.dev/packages/shelf) diseñada para desarrolladores que exigen **seguridad de tipos**, **arquitectura declarativa** y **documentación automática**.
+
+Elimina el boilerplate de la validación de JSON, el manejo manual de errores y la sincronización de Swagger. Con Coouter, tu código *es* tu documentación.
+
+---
+
+## ✨ Características Principales
+
+- 🛡️ **Seguridad de Tipos Total**: Integración nativa con `fpdart` utilizando el patrón `Either<Failure, Success>`.
+- 🧱 **Arquitectura Declarativa**: Organiza tu lógica en Controladores, Handlers y Grupos reutilizables.
+- 📝 **Swagger/OpenAPI 3.0**: Generación automática de especificaciones y servidor de Swagger UI incluido.
+- 🔄 **Mapeo Inteligente**: Conversión automática de Body y Query Params a modelos Dart con validación integrada.
+- 🧩 **Composición de Middleware**: Aplica lógica transversal a nivel de grupo, controlador o ruta individual.
+- 🚀 **Shelf-Ready**: Totalmente compatible con todo el ecosistema de middleware de Shelf.
+
+---
+
+## 📦 Instalación
+
+Añade `coouter` a tu `pubspec.yaml`:
 
 ```yaml
 dependencies:
   coouter: ^1.0.0
 ```
 
-## Quick Start
+O ejecútalo en tu terminal:
+
+```bash
+dart pub add coouter
+```
+
+---
+
+## 🏛️ Los Tres Pilares
+
+Coouter se basa en tres estructuras fundamentales para organizar tu API:
+
+### 1. Handlers (Estilo Funcional)
+Ideal para prototipos rápidos o endpoints sencillos.
 
 ```dart
-import 'package:coouter/coouter.dart';
-import 'package:shelf/shelf.dart';
-import 'package:shelf/shelf_io.dart' as shelf_io;
-import 'package:fpdart/fpdart.dart';
+final healthCheck = ApiControllerHandler<MyError, JsonResponse>(
+  verb: HttpMethod.GET,
+  path: '/health',
+  handler: (request) async => Right(JsonResponse({'status': 'alive'})),
+);
+```
 
-// 1. Define your error type
+### 2. Controladores (Estilo Basado en Clases)
+Perfecto para lógica compleja y reutilización. Permite inyectar dependencias y manejar estados.
+
+```dart
+class GetUserController extends ApiConverterController<UserParams, AppError, JsonResponse> {
+  GetUserController() : super(verb: HttpMethod.GET, path: '/users/:id');
+
+  @override
+  UserParams paramsMapper(Map<String, dynamic> map) => UserParams.fromMap(map);
+
+  @override
+  get processConvertedRequest => (ctx, request) async {
+    final user = await repository.findById(ctx.params.id);
+    return user != null 
+      ? Right(JsonResponse(user.toMap()))
+      : Left(AppError.notFound('Usuario no encontrado'));
+  };
+}
+```
+
+### 3. Grupos (Composición)
+Agrupa controladores bajo prefijos y middlewares comunes.
+
+```dart
+class ApiV1 extends ApiRouter {
+  @override
+  List<BaseMiddleware> get middlewares => [AuthMiddleware()];
+
+  @override
+  Map<String, ApiMountable> get controllers => {
+    '/users': ApiMountable.multiple([GetUserController(), CreateUserController()]),
+    '/status': ApiMountable.single(healthCheck),
+  };
+}
+```
+
+---
+
+## 🛡️ Manejo de Errores Tipado
+
+Olvídate de los `try-catch` infinitos. Coouter utiliza `Either` para forzarte a manejar los errores de forma explícita. Define tus fallos extendiendo `ResponseFailure`:
+
+```dart
 class AppError extends ResponseFailure {
   const AppError(this.message, {super.statusCode = 500});
   @override
   final String? message;
-}
 
-// 2. Create a simple endpoint
-final healthCheck = ApiControllerHandler<AppError, JsonResponse>(
-  verb: HttpMethod.GET,
-  path: '/health',
-  handler: (_) async => const Right(JsonResponse({'status': 'ok'})),
-);
-
-// 3. Mount and serve
-void main() async {
-  final handler = const Pipeline()
-    .addMiddleware(logRequests())
-    .addHandler(healthCheck.handler);
-
-  await shelf_io.serve(handler, 'localhost', 8080);
-  print('Server at http://localhost:8080/health');
+  factory AppError.notFound(String msg) => AppError(msg, statusCode: 404);
 }
 ```
 
-## Concepts
+---
 
-### Three Layers
+## 📝 Documentación Viva (Swagger)
 
-| Layer | When to use | Example |
-|-------|------------|---------|
-| **Handler** | Quick, functional style | Click → Click handler |
-| **Controller** | Complex, reusable logic | Business logic in a class |
-| **Group** | Multiple endpoints | API v1 with all routes |
-
-### Two Response Types
-
-- **Success**: `JsonResponse`, `ContentResponse`, `FileResponse`, `EmptyResponse`
-- **Failure**: Extend `ResponseFailure` with your error codes
-
-### Two Patterns
-
-- **Either pattern**: `Either<AppError, JsonResponse>` — explicit success/error
-- **Exception pattern**: Throw exceptions, let middleware catch them
-
-## Handlers (Functional Style)
-
-### Basic handler
+Añade el mixin `SwaggerInfo` a tus controladores para generar automáticamente la especificación OpenAPI:
 
 ```dart
-final getUsers = ApiControllerHandler<AppError, JsonResponse>(
-  verb: HttpMethod.GET,
-  path: '/users',
-  handler: (_) async => Right(JsonResponse({'users': []})),
-);
-```
-
-### With params conversion
-
-```dart
-// GET /users/123 -> ctx.params = {id: '123'}
-final getUser = ApiConverterControllerHandler<Map<String, dynamic>, AppError, JsonResponse>(
-  path: '/users/:id',
-  paramsMapper: (map) => map,  // or UserParams.fromMap
-  handler: (ctx, _) async {
-    final id = ctx.params['id'];
-    return Right(JsonResponse({'id': id}));
-  },
-);
-```
-
-### With body + params
-
-```dart
-// POST /users?name=test -> ctx.body = {name: 'test'}, ctx.params = {}
-final createUser = ApiConverterWithBodyConverterHandler<
-  Map<String, dynamic>,  // body type
-  Map<String, dynamic>,  // params type
-  AppError,
-  JsonResponse
->(
-  path: '/users',
-  paramsMapper: (map) => map,
-  requestBodyMapper: (map) => map,
-  handler: (ctx, _) async => Right(JsonResponse({'created': true})),
-);
-```
-
-## Controllers (Class-Based)
-
-### Simple controller
-
-```dart
-class HealthController extends ApiController<AppError, JsonResponse> {
-  HealthController() : super(verb: HttpMethod.GET, path: '/health');
-
-  @override
-  Future<Either<AppError, JsonResponse>> processRequest(Request request) async =>
-    const Right(JsonResponse({'status': 'ok'}));
-}
-```
-
-### With params conversion
-
-```dart
-class GetUserController extends ApiConverterController<Map<String, dynamic>, AppError, JsonResponse> {
-  GetUserController() : super(verb: HttpMethod.GET, path: '/users/:id');
-
-  @override
-  Mapper<Map<String, dynamic>> get paramsMapper => (map) => map;
-
-  @override
-  Process<AppError, JsonResponse, ApiControllerConverterParams<Map<String, dynamic>>>
-  get processConvertedRequest => (ctx, request) async =>
-    Right(JsonResponse({'id': ctx.params['id']}));
-}
-```
-
-### With body + params
-
-```dart
-class CreateUserController extends ApiConverterWithBodyController<Map<String, dynamic>, Map<String, dynamic>, AppError, JsonResponse> {
-  CreateUserController() : super(verb: HttpMethod.POST, path: '/users');
-
-  @override
-  Mapper<Map<String, dynamic>> get paramsMapper => (m) => m;
-  @override
-  Mapper<Map<String, dynamic>> get requestBodyMapper => (m) => m;
-
-  @override
-  Process<AppError, JsonResponse, ApiControllerConverterWithBodyParams<Map<String, dynamic>, Map<String, dynamic>>>
-  get processConvertedRequest => (ctx, request) async =>
-    Right(JsonResponse({'created': true}));
-}
-```
-
-## Groups
-
-### Group multiple controllers
-
-```dart
-class ApiV1 extends ApiGroup {
-  @override
-  Map<String, ApiMountable> get controllers => {
-    '/health': ApiMountable.single(HealthController()),
-    '/users': ApiMountable.multiple([
-      GetUserController(),
-      CreateUserController(),
-    ]),
-  };
-}
-
-// Mount at /api/v1
-final router = Router()..mount('/api/v1', ApiV1().handler);
-```
-
-### Groups can include middleware
-
-```dart
-class ApiV1 extends ApiGroup {
-  @override
-  List<BaseMiddleware> get middlewares => [LogMiddleware()];
-  
-  @override
-  Map<String, ApiMountable> get controllers => {...};
-}
-```
-
-## Middleware
-
-### Create middleware
-
-```dart
-class LogMiddleware extends BaseMiddleware {
-  const LogMiddleware();
-
-  @override
-  FutureOr<Response> executor(Handler innerHandler, Request request) async {
-    final start = DateTime.now();
-    final response = await innerHandler(request);
-    final duration = DateTime.now().difference(start);
-    print('${request.method} ${request.url} - ${response.statusCode} (${duration.inMs}ms)');
-    return response;
-  }
-}
-```
-
-### BadRequestMiddleware (included)
-
-Catches `BadConversionException`, `FormatException`, and `SchemaValidationException`, returns 400:
-
-```dart
-// Already included in ApiConverterControllerHandler
-// and ApiControllerListConverter
-```
-
-## Responses
-
-```dart
-// Success responses
-Right(const JsonResponse({'key': 'value'}));      // 200 JSON
-Right(EmptyResponse());                          // 200 empty
-Right(ContentResponse(content: '<xml>', contentType: ContentType.xml));  // 200 custom
-
-// Error responses (extend ResponseFailure)
-Right(const NotFoundError('User not found'));  // uses statusCode from your class
-```
-
-### Define your errors
-
-```dart
-class AppError extends ResponseFailure {
-  const AppError({required super.statusCode, super.message});
-  
-  factory AppError.notFound([String? msg]) => AppError(404, msg ?? 'Not found');
-  factory AppError.badRequest([String? msg]) => AppError(400, msg ?? 'Bad request');
-  factory AppError.internal([String? msg]) => AppError(500, msg ?? 'Error');
-}
-```
-
-## OpenAPI / Swagger
-
-### Auto-document your endpoints
-
-Add the `SwaggerInfo` mixin:
-
-```dart
-class GetUserController extends ApiConverterController<Map<String, dynamic>, AppError, JsonResponse>
+class CreateUserController extends ApiConverterWithBodyController<UserBody, NoParams, AppError, JsonResponse> 
     with SwaggerInfo {
-  GetUserController() : super(verb: HttpMethod.GET, path: '/users/:id');
-  // ... controller implementation
-
+  
   @override
-  String get description => 'Get user by ID';
-
-  @override
-  bool get requiresAuth => false;
+  String get description => 'Crea un nuevo usuario en el sistema';
 
   @override
   Map<int, ResponseDoc> get responses => {
-    200: ResponseDoc('User found', schema: SchemaDoc('User', {'type': 'object'})),
-    404: ResponseDoc('User not found'),
+    201: ResponseDoc('Usuario creado exitosamente', schema: SchemaDoc.name('User')),
+    400: ResponseDoc('Datos inválidos'),
   };
 }
 ```
 
-### Serve Swagger UI
+Para servir la documentación, simplemente añade el `SwaggerController`:
 
 ```dart
-final api = ApiV1();
-
 final router = Router()
-  ..mount('/api/v1', api.handler)
-  ..mount('/docs', SwaggerController(apiRouter: api).handler);
+  ..mount('/api/v1', apiV1.handler)
+  ..mount('/docs', SwaggerController(apiRouter: apiV1).handler);
+```
+Accede a `http://localhost:8080/docs/` y verás tu Swagger UI listo para usar.
 
-await shelf_io.serve(router.call, 'localhost', 8080);
-// Visit http://localhost:8080/docs/
+---
+
+## 🚀 Ejemplo Completo en 30 Segundos
+
+```dart
+import 'package:coouter/coouter.dart';
+import 'package:shelf/shelf_io.dart' as shelf_io;
+
+void main() async {
+  final api = ApiV1(); // Tu grupo de rutas
+  
+  final handler = const Pipeline()
+    .addMiddleware(logRequests())
+    .addHandler(api.handler);
+
+  await shelf_io.serve(handler, '0.0.0.0', 8080);
+  print('🚀 Servidor volando en http://localhost:8080');
+}
 ```
 
-Three endpoints:
-- `GET /docs/` — Swagger UI
-- `GET /docs/openapi.json` — OpenAPI 3.0 spec
-- `GET /docs/schemas.json` — Component schemas
+---
 
-## Installation
+## 🤝 Contribuciones
 
-```yaml
-dependencies:
-  coouter: ^1.0.0
+¡Las contribuciones son bienvenidas! Si tienes una idea para una nueva característica o has encontrado un bug, por favor abre un Issue o un Pull Request.
 
-dev_dependencies:
-  test: ^1.25.0
-```
+## 📄 Licencia
 
-## License
-
-MIT
+Este proyecto está bajo la Licencia MIT - mira el archivo [LICENSE](LICENSE) para más detalles.

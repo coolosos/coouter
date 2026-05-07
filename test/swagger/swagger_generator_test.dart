@@ -26,7 +26,7 @@ ApiControllerHandler<_TestFailure, _OkEntity> _handler(String path) {
   );
 }
 
-final class _TestGroup extends ApiGroup {
+final class _TestGroup extends ApiRouter {
   @override
   Map<String, ApiMountable> get controllers => {
     '/ping': ApiMountable.single(_handler('/ping')),
@@ -37,7 +37,7 @@ final class _TestGroup extends ApiGroup {
   };
 }
 
-final class _ProxyGroup extends ApiGroup {
+final class _ProxyGroup extends ApiRouter {
   @override
   Map<String, ApiMountable> get controllers => {
     '/proxy': ApiMountable.single(_ProxyCtrl()),
@@ -69,7 +69,7 @@ final class _AuthControllers extends ApiControllers with SwaggerInfo {
   Map<int, ResponseDoc> get responses => const {};
 }
 
-final class _AuthGroup extends ApiGroup {
+final class _AuthGroup extends ApiRouter {
   @override
   Map<String, ApiMountable> get controllers => {
     '/auth': ApiMountable.single(_AuthControllers()),
@@ -92,7 +92,7 @@ final class _DescControllers extends ApiControllers with SwaggerInfo {
   Map<int, ResponseDoc> get responses => const {};
 }
 
-final class _DescGroup extends ApiGroup {
+final class _DescGroup extends ApiRouter {
   @override
   Map<String, ApiMountable> get controllers => {
     '/desc': ApiMountable.single(_DescControllers()),
@@ -127,7 +127,7 @@ final class _RespControllers extends ApiControllers with SwaggerInfo {
   };
 }
 
-final class _RespGroup extends ApiGroup {
+final class _RespGroup extends ApiRouter {
   @override
   Map<String, ApiMountable> get controllers => {
     '/res': ApiMountable.single(_RespControllers()),
@@ -158,7 +158,7 @@ final class _SchemaControllers extends ApiControllers with SwaggerInfo {
   Map<int, ResponseDoc> get responses => const {};
 }
 
-final class _SchemaGroup extends ApiGroup {
+final class _SchemaGroup extends ApiRouter {
   @override
   Map<String, ApiMountable> get controllers => {
     '/users': ApiMountable.single(_SchemaControllers()),
@@ -179,7 +179,7 @@ final class _DescMiddleware extends BaseMiddleware {
   }
 }
 
-final class _MwGroup extends ApiGroup {
+final class _MwGroup extends ApiRouter {
   @override
   Map<String, ApiMountable> get controllers => {
     '/mw': ApiMountable.single(_handler('/test')),
@@ -189,7 +189,7 @@ final class _MwGroup extends ApiGroup {
   List<BaseMiddleware> get middlewares => [const _DescMiddleware()];
 }
 
-Future<Map<String, dynamic>> _getSpec(ApiGroup group) async {
+Future<Map<String, dynamic>> _getSpec(ApiRouter group) async {
   final swagger = SwaggerController(apiRouter: group);
   final request = Request(
     'GET',

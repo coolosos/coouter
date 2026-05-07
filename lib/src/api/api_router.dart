@@ -8,8 +8,8 @@ import '../middleware/base_middleware.dart';
 ///
 /// This class is the cornerstone of modular routing, allowing you to compose a
 /// complex API from smaller, self-contained controller units.
-abstract base class ApiGroup {
-  const ApiGroup();
+abstract base class ApiRouter {
+  const ApiRouter();
 
   Map<String, ApiMountable> get controllers;
   List<BaseMiddleware> get middlewares => const [];

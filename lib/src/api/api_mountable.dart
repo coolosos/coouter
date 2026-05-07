@@ -1,7 +1,7 @@
 import '../controllers/base_controller.dart';
 
 /// A factory that provides a declarative way to group controllers for use
-/// with an [ApiGroup].
+/// with an [ApiRouter].
 ///
 /// This class exists to provide a clean and readable API for defining whether
 /// a route prefix should mount a single API source or a list of them.
